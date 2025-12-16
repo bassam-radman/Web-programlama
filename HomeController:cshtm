@@ -1,1 +1,47 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WebHomework.Data;
+using WebHomework.Models;
 
+namespace WebHomework.Controllers
+{
+    // Bu etiket buranın bir API olduğunu belirtir
+    [Route("api/[controller]")]
+    [ApiController]
+    public class GymServicesApiController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public GymServicesApiController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // 1. TÜM HİZMETLERİ GETİR (GET: api/GymServicesApi)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<GymService>>> GetGymServices()
+        {
+            // Veritabanındaki tüm hizmetleri JSON olarak döndürür
+            return await _context.GymServices.ToListAsync();
+        }
+
+        // 2. FİYATA GÖRE FİLTRELEME (LINQ SORGUSU BURADA) 
+        // (GET: api/GymServicesApi/filter/500) -> 500 TL altındakileri getirir
+        [HttpGet("filter/{maxPrice}")]
+        public async Task<ActionResult<IEnumerable<GymService>>> GetServicesByPrice(decimal maxPrice)
+        {
+            // ÖDEVİN İSTEDİĞİ LINQ SORGUSU:
+            // "Where" komutu ile filtreleme yapıyoruz.
+            var filteredServices = await _context.GymServices
+                .Where(s => s.Price <= maxPrice)
+                .ToListAsync();
+
+            if (filteredServices == null || filteredServices.Count == 0)
+            {
+                return NotFound("Bu fiyat aralığında hizmet bulunamadı.");
+            }
+
+            return filteredServices;
+        }
+    }
+}
